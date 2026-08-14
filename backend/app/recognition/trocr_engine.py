@@ -64,10 +64,11 @@ class TrOCRHandwritingEngine(BaseRecognitionEngine):
 
     def _generate_image_variants(self, cropped_bgr: np.ndarray) -> List[Tuple[str, Image.Image, np.ndarray]]:
         """
-        Generates 3 optimized handwriting image variants for TrOCR DeiT patch encoder:
-          1. Standard Centered White Padded RGB
-          2. CLAHE Contrast-Enhanced + Sharpened RGB
-          3. Morphological Dilation Stroke-Enhanced RGB
+        Generates 4 optimized handwriting image variants for TrOCR DeiT patch encoder:
+          1. Standard Centered White Padded RGB (48px margin)
+          2. Otsu Binarized Crisp Strokes RGB
+          3. CLAHE Contrast-Enhanced + Sharpened RGB
+          4. Morphological Stroke-Thickening Dilation RGB
         """
         h, w, _ = cropped_bgr.shape
         variants = []
@@ -80,21 +81,23 @@ class TrOCRHandwritingEngine(BaseRecognitionEngine):
         rgb_padded = cv2.cvtColor(padded_bgr, cv2.COLOR_BGR2RGB)
         variants.append(("Standard Centered", Image.fromarray(rgb_padded), padded_bgr))
 
-        # 2. CLAHE Contrast-Enhanced + 3x3 Sharpening Kernel
+        # 2. Otsu Binarized Crisp Black Strokes on White Paper Background
         gray = cv2.cvtColor(padded_bgr, cv2.COLOR_BGR2GRAY)
+        _, otsu_bin = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        otsu_rgb = cv2.cvtColor(otsu_bin, cv2.COLOR_GRAY2RGB)
+        variants.append(("Otsu Binarized", Image.fromarray(otsu_rgb), cv2.cvtColor(otsu_rgb, cv2.COLOR_RGB2BGR)))
+
+        # 3. CLAHE Contrast-Enhanced + 3x3 Sharpening Kernel
         clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))
         clahe_img = clahe.apply(gray)
-
-        # Apply subtle sharpening filter
         sharpen_kernel = np.array([[0, -0.5, 0], [-0.5, 3.0, -0.5], [0, -0.5, 0]], dtype=np.float32)
         sharpened_gray = cv2.filter2D(clahe_img, -1, sharpen_kernel)
         clahe_rgb = cv2.cvtColor(sharpened_gray, cv2.COLOR_GRAY2RGB)
         variants.append(("CLAHE Sharpened", Image.fromarray(clahe_rgb), cv2.cvtColor(clahe_rgb, cv2.COLOR_RGB2BGR)))
 
-        # 3. Morphological Stroke-Thickening Dilation
-        # Invert gray (stroke=white) -> dilate stroke slightly -> invert back
+        # 4. Morphological Stroke-Thickening Dilation
         inverted = cv2.bitwise_not(gray)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
         dilated_inv = cv2.dilate(inverted, kernel, iterations=1)
         dilated_gray = cv2.bitwise_not(dilated_inv)
         dilated_rgb = cv2.cvtColor(dilated_gray, cv2.COLOR_GRAY2RGB)

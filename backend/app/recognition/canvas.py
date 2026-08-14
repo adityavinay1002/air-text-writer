@@ -80,10 +80,10 @@ class VirtualHandwritingCanvas:
         cropped = self.canvas[crop_y1:crop_y2, crop_x1:crop_x2].copy()
         crop_h, crop_w, _ = cropped.shape
 
-        # Scale to target height preserving aspect ratio
+        # Scale to target height preserving natural aspect ratio
         aspect = crop_w / float(max(1, crop_h))
         new_w = int(target_height * aspect)
-        new_w = max(48, min(1000, new_w))
+        new_w = max(48, min(1200, new_w))
 
         # Use Lanczos / Inter-Area interpolation for crisp stroke downsampling
         interp = cv2.INTER_LANCZOS4 if new_w > crop_w else cv2.INTER_AREA
