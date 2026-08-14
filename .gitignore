@@ -62,7 +62,7 @@ backend/debug_output/
 backend/libs/
 
 # ==============================
-# NODE / REACT
+# REACT / NODE
 # ==============================
 
 node_modules/
