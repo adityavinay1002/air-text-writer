@@ -14,9 +14,9 @@ export function RecognitionPanel({
   confidence,
   croppedImageBase64,
 }: RecognitionPanelProps) {
-  const isRecognized = gestureState === 'recognized' && Boolean(recognizedWord);
-  const isLowConfidence = gestureState === 'low_confidence';
   const isProcessing = gestureState === 'processing';
+  const isLowConfidence = gestureState === 'low_confidence' && !recognizedWord;
+  const isRecognized = Boolean(recognizedWord) && !isProcessing;
 
   return (
     <section className="panel-surface" style={{ padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>

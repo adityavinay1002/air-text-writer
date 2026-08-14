@@ -173,11 +173,11 @@ export default function App() {
               ...prev,
               gestureState: msg.gesture_state
             }));
-            if (msg.strokes) {
+            if (msg.strokes && msg.strokes.length > 0) {
               setStrokes(msg.strokes.map((s: number[][]) => s.map(([x, y]) => ({ x, y }))));
             }
           } else if (msg.type === 'trajectory_update') {
-            if (msg.strokes) {
+            if (msg.strokes && msg.strokes.length > 0) {
               setStrokes(msg.strokes.map((s: number[][]) => s.map(([x, y]) => ({ x, y }))));
             }
           } else if (msg.type === 'recognition_result') {
@@ -191,24 +191,26 @@ export default function App() {
                 searchQuery: text,
                 recognitionConfidence: conf,
                 gestureState: 'recognized',
-                croppedImageBase64: msg.cropped_image_base64
+                croppedImageBase64: msg.cropped_image_base64 || prev.croppedImageBase64
               }));
+              if (msg.strokes && msg.strokes.length > 0) {
+                setStrokes(msg.strokes.map((s: number[][]) => s.map(([x, y]) => ({ x, y }))));
+              }
               saveHistoryItem(text, conf);
               fetchMovies(text);
             } else if (msg.status === 'LOW_CONFIDENCE') {
               setSession((prev) => ({
                 ...prev,
                 gestureState: 'low_confidence',
-                croppedImageBase64: msg.cropped_image_base64
+                croppedImageBase64: msg.cropped_image_base64 || prev.croppedImageBase64
               }));
             }
           } else if (msg.type === 'clear') {
+            // Natural pause / gesture clear resets in-progress strokes without wiping recognized query
             setStrokes([]);
             setSession((prev) => ({
               ...prev,
-              recognizedWord: '',
-              croppedImageBase64: undefined,
-              gestureState: 'ready'
+              gestureState: prev.recognizedWord ? 'recognized' : 'ready'
             }));
           }
         } catch (e) {
@@ -369,6 +371,7 @@ export default function App() {
                 strokes={strokes}
                 gestureState={session.gestureState}
                 recognizedWord={session.recognizedWord}
+                croppedImageBase64={session.croppedImageBase64}
               />
             </div>
 

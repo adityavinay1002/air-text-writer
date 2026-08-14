@@ -248,6 +248,7 @@ async def cv_processing_loop():
                     "confidence": conf,
                     "status": status,
                     "cropped_image_base64": img_b64,
+                    "strokes": drawable_strokes,
                     "event": "CONFIRMED"
                 }
 
@@ -255,7 +256,11 @@ async def cv_processing_loop():
                 await manager.broadcast(rec_msg)
 
                 last_broadcast_state = "recognized" if status == "RECOGNIZED" else "ready"
-                await manager.broadcast({"type": "status", "gesture_state": last_broadcast_state})
+                await manager.broadcast({
+                    "type": "status",
+                    "gesture_state": last_broadcast_state,
+                    "strokes": drawable_strokes
+                })
 
             elif engine_res["event"] == "CLEARED":
                 await manager.broadcast({"type": "clear", "gesture_state": "clear"})

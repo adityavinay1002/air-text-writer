@@ -54,6 +54,15 @@ class WordTrajectoryEngine:
         self.last_recognized_word: Optional[str] = None
         self.last_confidence: float = 0.0
         self.last_features: Dict[str, Any] = {}
+        self.last_strokes: List[List[Tuple[int, int]]] = []
+        self.last_rendered_image = None
+        self.last_status = "IDLE"
+
+    def _extract_strokes(self, session: WordSession) -> List[List[Tuple[int, int]]]:
+        drawable_strokes = []
+        for stroke in session.strokes:
+            drawable_strokes.append([(pt[0], pt[1]) for pt in stroke])
+        return drawable_strokes
 
     def update(
         self,
@@ -70,15 +79,18 @@ class WordTrajectoryEngine:
         if gesture_state == "WRITE" and fingertip_px is not None:
             if self.session is None or self.session.state == "CONFIRMED":
                 self.session = WordSession()
+                self.last_strokes = []
             
             self.session.state = "WRITING"
             self.session.add_point(fingertip_px)
+            self.last_strokes = self._extract_strokes(self.session)
             result_event["event"] = "WRITING"
 
         elif gesture_state == "CONFIRM":
             if self.session is not None and self.session.get_total_point_count() > 0:
                 self.session.state = "CONFIRMED"
                 drawable_strokes = self.get_strokes_to_draw()
+                self.last_strokes = list(drawable_strokes)
                 
                 # Execute recognition engine if provided
                 if processor is not None:
@@ -112,7 +124,8 @@ class WordTrajectoryEngine:
                     "debug_info": getattr(self, "last_debug_info", {})
                 }
 
-                # Reset session cleanly after confirmation to prevent cross-word contamination
+                # Reset active session cleanly after confirmation to prevent cross-word contamination,
+                # while retaining last_strokes for visual display until next write
                 self.session = None
             else:
                 result_event["event"] = "CONFIRM_EMPTY"
@@ -125,6 +138,7 @@ class WordTrajectoryEngine:
             # PEN_UP or NEUTRAL gesture
             if self.session is not None:
                 self.session.pause_stroke()
+                self.last_strokes = self._extract_strokes(self.session)
                 result_event["event"] = "PAUSED"
 
         return result_event
@@ -135,13 +149,11 @@ class WordTrajectoryEngine:
         self.last_recognized_word = None
         self.last_confidence = 0.0
         self.last_features = {}
+        self.last_strokes = []
+        self.last_rendered_image = None
 
     def get_strokes_to_draw(self) -> List[List[Tuple[int, int]]]:
         """Returns simplified (x, y) stroke tuples for rendering."""
-        if self.session is None:
-            return []
-        
-        drawable_strokes = []
-        for stroke in self.session.strokes:
-            drawable_strokes.append([(pt[0], pt[1]) for pt in stroke])
-        return drawable_strokes
+        if self.session is not None:
+            return self._extract_strokes(self.session)
+        return self.last_strokes
