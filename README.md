@@ -23,7 +23,7 @@
 By combining 3D palm-plane geometry for gesture classification, MediaPipe hand tracking, smooth trajectory rendering, and Microsoft's pre-trained **TrOCR (Transformer OCR)** model, AirWrite turns air handwriting into actionable TV and movie searches in real-time.
 
 ```text
- ☝️ Air Write      ✊ Pen Up      ✌️ Confirm          🤖 TrOCR           📺 Movie Search
+ ☝️ Air Write      🖐️ Pen Up      ✌️ Confirm          🤖 TrOCR           📺 Movie Search
 ┌───────────┐   ┌───────────┐   ┌───────────┐     ┌───────────┐     ┌────────────────┐
 │ Track     │──>│ Pause     │──>│ Freeze    │────>│ Vision    │────>│ TV & Movie     │
 │ Fingertip │   │ Stroke    │   │ Canvas    │     │ Transformer│    │ Poster Results │
@@ -34,9 +34,11 @@ By combining 3D palm-plane geometry for gesture classification, MediaPipe hand t
 
 ## ✨ Features
 
-- ☝️ **Continuous Fingertip Air Writing**: Tracks your index fingertip in real-time ($1280 \times 720$ canvas resolution) with sub-pixel trajectory smoothing.
-- ✊ **Natural Stroke Separation (`PEN_UP`)**: Make a fist to pause stroke recording without erasing existing writing—allowing multi-stroke character and word creation.
-- ✌️ **Training-Free Vision Transformer Recognition (`CONFIRM`)**: Show two fingers to freeze handwriting and pass auto-cropped handwriting regions to **Microsoft TrOCR** (`microsoft/trocr-small-handwritten`) with multi-variant image preprocessing & beam search.
+- ☝️ **Continuous Fingertip Air Writing (`WRITE`)**: Tracks your index fingertip in real-time ($1280 \times 720$ canvas resolution) with sub-pixel trajectory smoothing.
+- 🖐️ **Natural Stroke Separation (`PEN_UP`)**: Show an open palm to pause stroke recording without erasing existing writing—allowing seamless multi-stroke character and word creation.
+- ✌️ **Vision Transformer Recognition (`CONFIRM`)**: Extend index and middle fingers (peace sign) to freeze handwriting and pass auto-cropped handwriting regions to **Microsoft TrOCR** (`microsoft/trocr-small-handwritten`) with multi-variant image preprocessing & beam search.
+- ✊ **Canvas Reset (`CLEAR`)**: Make a fist (or click the Clear button) to reset the virtual handwriting canvas and session state.
+- 🖼️ **Persistent Canvas & Result Preview**: Retains the captured handwriting image preview, glowing stroke paths, and recognized search queries without vanishing on gesture transitions.
 - 📺 **Live Backend Stream (`MJPEG`)**: Streams real-time OpenCV desktop feeds directly into the browser with MediaPipe hand skeletons, wrist status badges, and glowing fingertip tracking points.
 - 🔍 **Automated & Manual Search**: Recognized text automatically populates the search bar and queries public media APIs (TVMaze) for real movie poster cards with ratings, release years, genres, and streaming badges.
 - 📜 **LocalStorage Search History**: Retains past confirmed search queries with timestamps and confidence scores.
@@ -48,10 +50,10 @@ By combining 3D palm-plane geometry for gesture classification, MediaPipe hand t
 
 | Gesture | Hand Pose | Description | Action |
 | :---: | :---: | :--- | :--- |
-| **`WRITE`** | ☝️ Index Finger Extended | Tracks index fingertip $(x, y)$ coordinates continuously | Draws live glowing strokes on screen |
-| **`PEN_UP`** | ✊ Closed Fist | Index finger curled | Pauses stroke recording; keeps current strokes visible |
-| **`CONFIRM`** | ✌️ Two Fingers Extended | Index & middle fingers extended | Freezes canvas, auto-crops region, and runs TrOCR |
-| **`CLEAR`** | 🖐️ Open Palm | All 5 fingers extended | Resets virtual handwriting canvas and session state |
+| **`WRITE`** | ☝️ Index Finger Extended | Tracks index fingertip $(x, y)$ coordinates continuously | Draws live glowing strokes on screen & trajectory canvas |
+| **`PEN_UP`** | 🖐️ Open Palm | 3 or 4 fingers extended | Pauses stroke recording; keeps current strokes visible |
+| **`CONFIRM`** | ✌️ Two Fingers Extended | Index & middle fingers extended (Peace Sign) | Freezes canvas, auto-crops region, and runs TrOCR |
+| **`CLEAR`** | ✊ Closed Fist | All main fingers folded | Resets virtual handwriting canvas and session state |
 
 ---
 

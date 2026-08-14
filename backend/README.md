@@ -11,9 +11,9 @@ Clean, modular Python computer-vision foundation for **AirWrite TV Search**, pow
 3. **Palm-Aware Gesture Classification**: 3D geometric palm-relative finger extension analysis (tilt and rotation invariant).
 4. **Mutually Exclusive Gestures**:
    - ☝️ **`WRITE`**: Index finger extended **ONLY**. (Displays glowing fingertip tracking point).
-   - ✊ **`PEN_UP`**: Fist / all fingers folded. (Fingertip point hidden).
-   - ✌️ **`CONFIRM`**: Index + Middle fingers extended **ONLY**. (Fingertip point hidden).
-   - 🖐️ **`CLEAR`**: Full open palm. (Fingertip point hidden).
+   - 🖐️ **`PEN_UP`**: Open palm / 3-4 fingers extended. (Pauses stroke recording; retains strokes).
+   - ✌️ **`CONFIRM`**: Index + Middle fingers extended **ONLY**. (Freezes canvas & runs TrOCR).
+   - ✊ **`CLEAR`**: Fist / all main fingers folded. (Resets active canvas).
    - ❓ **`NEUTRAL`**: Unassigned hand posture.
 5. **Anti-Flicker Stabilizer**: Temporal sliding-window majority voting ($N=5$) for smooth, jitter-free state transitions.
 6. **Isolated 2-Hand Control**: A ✌️ `CONFIRM` gesture on the confirmation hand never interferes with or triggers `WRITE`/`PEN_UP` on the writing hand.
