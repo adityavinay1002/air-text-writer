@@ -40,9 +40,9 @@ def main():
     print("  PRIMARY ENGINE: Microsoft TrOCR (Pretrained Vision-Transformer for Handwriting)")
     print("  AIR-WRITING WORKFLOW:")
     print("    ☝️  WRITE    : Visually accumulate smooth handwriting strokes on canvas")
-    print("    ✊  PEN_UP   : Pause recording (NEVER recognizes; keeps writing intact)")
+    print("    🖐️  PEN_UP   : Open palm to pause stroke recording / complete letter (keeps writing intact)")
     print("    ✌️  CONFIRM  : Freeze canvas -> Auto-crop handwriting -> Run TrOCR model")
-    print("    🖐️  CLEAR    : Reset virtual handwriting canvas")
+    print("    ✊  CLEAR    : Make a fist to reset virtual handwriting canvas")
     print("=" * 70)
     print("  Press 'q' or 'ESC' in the window to quit.\n")
 
@@ -97,7 +97,7 @@ def main():
                 stable_gesture = stabilizer.update(hand_key, raw_gesture)
                 is_write_active = (stable_gesture == GestureState.WRITE)
 
-                if stable_gesture in (GestureState.CONFIRM, GestureState.CLEAR):
+                if stable_gesture in (GestureState.CONFIRM, GestureState.CLEAR, GestureState.PEN_UP):
                     active_gesture_override = stable_gesture
                 elif is_write_active and len(landmarks_pixel) > 8:
                     active_write_point = landmarks_pixel[8]

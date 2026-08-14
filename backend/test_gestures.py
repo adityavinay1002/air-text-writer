@@ -56,11 +56,11 @@ def test_classifier():
     assert res_write["gesture"] == GestureState.WRITE, f"Expected WRITE, got {res_write['gesture']}"
     print("  [PASS] WRITE detected correctly")
 
-    # Test 2: PEN_UP
-    pen_up_lm = generate_landmarks()
+    # Test 2: PEN_UP (Open Palm: all 4 main fingers extended)
+    pen_up_lm = generate_landmarks(index_up=True, middle_up=True, ring_up=True, pinky_up=True)
     res_pen_up = PalmAwareGestureClassifier.classify_hand(pen_up_lm)
     assert res_pen_up["gesture"] == GestureState.PEN_UP, f"Expected PEN_UP, got {res_pen_up['gesture']}"
-    print("  [PASS] PEN_UP detected correctly")
+    print("  [PASS] PEN_UP (Open Palm) detected correctly")
 
     # Test 3: CONFIRM
     confirm_lm = generate_landmarks(index_up=True, middle_up=True)
@@ -68,11 +68,11 @@ def test_classifier():
     assert res_confirm["gesture"] == GestureState.CONFIRM, f"Expected CONFIRM, got {res_confirm['gesture']}"
     print("  [PASS] CONFIRM detected correctly (NOT WRITE)")
 
-    # Test 4: CLEAR
-    clear_lm = generate_landmarks(index_up=True, middle_up=True, ring_up=True, pinky_up=True)
+    # Test 4: CLEAR (Fist: all 4 main fingers folded)
+    clear_lm = generate_landmarks(index_up=False, middle_up=False, ring_up=False, pinky_up=False)
     res_clear = PalmAwareGestureClassifier.classify_hand(clear_lm)
     assert res_clear["gesture"] == GestureState.CLEAR, f"Expected CLEAR, got {res_clear['gesture']}"
-    print("  [PASS] CLEAR detected correctly (NOT WRITE)")
+    print("  [PASS] CLEAR (Fist) detected correctly")
 
     # Test 5: Multi-hand Independent Tracking Test
     stabilizer = MultiHandStabilizer()

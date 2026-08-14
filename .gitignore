@@ -53,6 +53,8 @@ backend/app/outputs/*
 backend/app/evidence/*
 !backend/app/evidence/.gitkeep
 
+backend/debug_output/
+
 # ==============================
 # LARGE / VENDORED PYTHON LIBRARIES
 # ==============================

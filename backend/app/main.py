@@ -157,7 +157,7 @@ async def cv_processing_loop():
                 stable_gesture = stabilizer.update(hand_key, raw_gesture)
                 is_write_active = (stable_gesture == GestureState.WRITE)
 
-                if stable_gesture in (GestureState.CONFIRM, GestureState.CLEAR):
+                if stable_gesture in (GestureState.CONFIRM, GestureState.CLEAR, GestureState.PEN_UP):
                     active_gesture_override = stable_gesture
                 elif is_write_active and len(landmarks_pixel) > 8:
                     active_write_point = landmarks_pixel[8]
@@ -256,6 +256,10 @@ async def cv_processing_loop():
 
                 last_broadcast_state = "recognized" if status == "RECOGNIZED" else "ready"
                 await manager.broadcast({"type": "status", "gesture_state": last_broadcast_state})
+
+            elif engine_res["event"] == "CLEARED":
+                await manager.broadcast({"type": "clear", "gesture_state": "clear"})
+                last_broadcast_state = "ready"
 
             await asyncio.sleep(0.01)
 

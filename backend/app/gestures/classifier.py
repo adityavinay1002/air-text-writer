@@ -3,19 +3,19 @@ from typing import List, Tuple, Dict, Any
 
 class GestureState:
     WRITE = "WRITE"        # ☝️ Index finger extended ONLY
-    PEN_UP = "PEN_UP"      # ✊ Fist (all main fingers folded)
-    CONFIRM = "CONFIRM"    # ✌️ Two fingers (Index + Middle extended ONLY)
-    CLEAR = "CLEAR"        # 🖐️ Full open palm (all main fingers extended)
+    PEN_UP = "PEN_UP"      # 🖐️ Full open palm (all main fingers extended) — pauses stroke & preserves writing
+    CONFIRM = "CONFIRM"    # ✌️ Two fingers (Index + Middle extended ONLY) — triggers TrOCR recognition
+    CLEAR = "CLEAR"        # ✊ Fist (all main fingers folded) — resets canvas & session
     NEUTRAL = "NEUTRAL"    # Any other unassigned gesture
 
 class PalmAwareGestureClassifier:
     """
     Palm-aware classifier for detecting hand finger states and mapping to mutually exclusive gestures:
-      - WRITE (☝️)
-      - PEN_UP (✊)
-      - CONFIRM (✌️)
-      - CLEAR (🖐️)
-      - NEUTRAL
+      - WRITE (☝️): Index finger extended ONLY
+      - PEN_UP (🖐️): Full open palm (3 or 4 fingers extended) — stops stroke & pauses recording
+      - CONFIRM (✌️): Index + Middle extended ONLY — triggers TrOCR recognition
+      - CLEAR (✊): Fist (all main fingers folded) — resets canvas & clears accumulated handwriting
+      - NEUTRAL: Any unassigned gesture
     """
     
     @staticmethod
@@ -61,13 +61,13 @@ class PalmAwareGestureClassifier:
         Returns dictionary with:
           - gesture: str (WRITE | PEN_UP | CONFIRM | CLEAR | NEUTRAL)
           - finger_states: Dict of finger extension booleans
-          - index_tip: Tuple of (x, y, z) index tip coordinates if available
+          - index_tip_norm: Tuple of (x, y, z) index tip coordinates if available
         """
         if not landmarks_norm or len(landmarks_norm) < 21:
             return {
                 "gesture": GestureState.NEUTRAL,
                 "finger_states": {},
-                "index_tip": None
+                "index_tip_norm": None
             }
 
         # Check main fingers (Index, Middle, Ring, Pinky)
@@ -95,11 +95,11 @@ class PalmAwareGestureClassifier:
         # Mutually exclusive gesture classification rules
         if index_ext and not middle_ext and not ring_ext and not pinky_ext:
             gesture = GestureState.WRITE
-        elif not index_ext and not middle_ext and not ring_ext and not pinky_ext:
+        elif (index_ext and middle_ext and ring_ext and pinky_ext) or (middle_ext and ring_ext and pinky_ext):
             gesture = GestureState.PEN_UP
         elif index_ext and middle_ext and not ring_ext and not pinky_ext:
             gesture = GestureState.CONFIRM
-        elif index_ext and middle_ext and ring_ext and pinky_ext:
+        elif not index_ext and not middle_ext and not ring_ext and not pinky_ext:
             gesture = GestureState.CLEAR
         else:
             gesture = GestureState.NEUTRAL

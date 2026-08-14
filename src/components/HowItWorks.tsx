@@ -18,10 +18,10 @@ export function HowItWorks() {
     },
     {
       step: '03',
-      title: 'Pause Between Strokes (✊ PEN_UP)',
-      desc: 'Make a fist to pause stroke recording. Your written strokes remain intact on screen.',
+      title: 'Pause Between Strokes (🖐️ PEN_UP)',
+      desc: 'Show open palm (🖐️) to pause stroke recording / complete letter. Make a fist (✊) to clear.',
       icon: Sparkles,
-      badge: '✊ GESTURE'
+      badge: '🖐️ GESTURE'
     },
     {
       step: '04',
