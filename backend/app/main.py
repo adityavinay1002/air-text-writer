@@ -1,11 +1,12 @@
 import os
 import sys
 import asyncio
+import functools
 import json
 import time
 import logging
 import base64
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 # Ensure backend directory is in sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -42,6 +43,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+async def run_in_thread(func, *args):
+    """Universal Python async thread executor compatible with all Python versions."""
+    loop = asyncio.get_running_loop()
+    if args:
+        func = functools.partial(func, *args)
+    return await loop.run_in_executor(None, func)
 
 class ConnectionManager:
     """Manages active WebSocket connections."""
@@ -107,10 +115,6 @@ async def cv_processing_loop():
 
     logger.info("Starting CV Processing Loop...")
     
-    if trocr_engine is None:
-        logger.info("Pre-loading TrOCR model in background thread...")
-        trocr_engine = await asyncio.to_thread(TrOCRHandwritingEngine, 0.38)
-
     detector = HandDetector(max_num_hands=2)
     stabilizer = MultiHandStabilizer()
     word_engine = WordTrajectoryEngine()
@@ -127,7 +131,7 @@ async def cv_processing_loop():
 
     try:
         while is_cv_running and camera_stream and camera_stream.is_opened:
-            ret, frame = camera_stream.read_frame()
+            ret, frame = await run_in_thread(camera_stream.read_frame)
             if not ret or frame is None:
                 await asyncio.sleep(0.01)
                 continue
@@ -219,6 +223,11 @@ async def cv_processing_loop():
                     "strokes": drawable_strokes
                 })
 
+            # Lazy-load TrOCR engine if CONFIRM is triggered and engine is not ready
+            if current_input_state == GestureState.CONFIRM and trocr_engine is None:
+                logger.info("Initializing TrOCR model on demand for CONFIRM gesture...")
+                trocr_engine = await run_in_thread(TrOCRHandwritingEngine, 0.38)
+
             # Run engine update
             engine_res = word_engine.update(current_input_state, active_write_point, processor=trocr_engine)
 
@@ -250,12 +259,14 @@ async def cv_processing_loop():
 
             await asyncio.sleep(0.01)
 
+    except asyncio.CancelledError:
+        logger.info("CV Processing loop task cancelled.")
     except Exception as e:
         logger.error(f"Error in CV processing loop: {e}", exc_info=True)
     finally:
         detector.close()
         if camera_stream:
-            camera_stream.release()
+            await run_in_thread(camera_stream.release)
             camera_stream = None
         is_cv_running = False
         is_camera_active = False
@@ -294,7 +305,7 @@ async def startup_event():
     global trocr_engine
     logger.info("Pre-loading Microsoft TrOCR Engine in background thread...")
     try:
-        trocr_engine = await asyncio.to_thread(TrOCRHandwritingEngine, 0.38)
+        trocr_engine = await run_in_thread(TrOCRHandwritingEngine, 0.38)
         logger.info("Microsoft TrOCR Engine pre-loaded successfully!")
     except Exception as e:
         logger.error(f"Error pre-loading TrOCR engine: {e}")
@@ -311,7 +322,7 @@ async def root():
     return {
         "status": "online",
         "service": "AirWrite TV Search CV Engine",
-        "phase": 6.2,
+        "phase": 6.5,
         "camera_active": is_camera_active,
         "trocr_loaded": trocr_engine is not None,
         "max_num_hands": settings.MAX_NUM_HANDS
@@ -340,39 +351,58 @@ async def video_feed():
 @app.post("/api/camera/start")
 async def start_camera():
     global camera_stream, cv_task, is_cv_running, is_camera_active
-    async with cv_lock:
-        if is_camera_active and is_cv_running:
-            return {"status": "already_running", "camera_active": True}
+    try:
+        async with cv_lock:
+            if is_camera_active and is_cv_running:
+                return {"status": "already_running", "camera_active": True}
 
-        logger.info("Starting Camera Stream via REST request...")
-        camera_stream = CameraStream()
-        if not camera_stream.start():
-            logger.error("Failed to start camera stream.")
-            return {"status": "error", "message": "Failed to open camera device", "camera_active": False}
+            logger.info("Starting Camera Stream via REST request...")
+            camera_stream = CameraStream()
+            
+            # Run camera initialization in a background thread to prevent blocking the asyncio event loop!
+            started = await run_in_thread(camera_stream.start)
+            if not started:
+                logger.error("Failed to start camera stream.")
+                camera_stream = None
+                return {"status": "error", "message": "Failed to open camera device", "camera_active": False}
 
-        cv_task = asyncio.create_task(cv_processing_loop())
-        return {"status": "started", "camera_active": True}
+            is_cv_running = True
+            is_camera_active = True
+            cv_task = asyncio.create_task(cv_processing_loop())
+            return {"status": "started", "camera_active": True}
+    except Exception as e:
+        logger.error(f"Error in start_camera endpoint: {e}", exc_info=True)
+        return {"status": "error", "message": str(e), "camera_active": False}
 
 @app.post("/api/camera/stop")
 async def stop_camera():
-    global is_cv_running, is_camera_active, camera_stream
-    async with cv_lock:
-        if not is_camera_active and not is_cv_running:
-            return {"status": "already_stopped", "camera_active": False}
+    global is_cv_running, is_camera_active, camera_stream, cv_task
+    try:
+        async with cv_lock:
+            if not is_camera_active and not is_cv_running:
+                return {"status": "already_stopped", "camera_active": False}
 
-        logger.info("Stopping Camera Stream via REST request...")
-        is_cv_running = False
-        if camera_stream:
-            camera_stream.release()
-            camera_stream = None
-        is_camera_active = False
+            logger.info("Stopping Camera Stream via REST request...")
+            is_cv_running = False
+            is_camera_active = False
 
-        await manager.broadcast({
-            "type": "camera_status",
-            "camera_active": False,
-            "gesture_state": "ready"
-        })
-        return {"status": "stopped", "camera_active": False}
+            if camera_stream:
+                await run_in_thread(camera_stream.release)
+                camera_stream = None
+
+            if cv_task:
+                cv_task.cancel()
+                cv_task = None
+
+            await manager.broadcast({
+                "type": "camera_status",
+                "camera_active": False,
+                "gesture_state": "ready"
+            })
+            return {"status": "stopped", "camera_active": False}
+    except Exception as e:
+        logger.error(f"Error in stop_camera endpoint: {e}", exc_info=True)
+        return {"status": "error", "message": str(e), "camera_active": False}
 
 @app.post("/api/session/clear")
 async def clear_session():
@@ -385,7 +415,7 @@ async def clear_session():
 @app.get("/api/search")
 async def search_movies(q: str = Query(..., min_length=1, description="Movie/TV search query")):
     logger.info(f"Received search request for: '{q}'")
-    results = await asyncio.to_thread(MovieSearchService.search_movies, q)
+    results = await run_in_thread(MovieSearchService.search_movies, q)
     return {"query": q, "count": len(results), "movies": results}
 
 @app.websocket("/ws")

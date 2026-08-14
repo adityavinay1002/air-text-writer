@@ -16,6 +16,11 @@ class CameraStream:
         self.prev_frame_time = time.time()
         self.fps = 0.0
 
+    @property
+    def is_opened(self) -> bool:
+        """Returns True if the camera VideoCapture device is initialized and opened."""
+        return self.cap is not None and self.cap.isOpened()
+
     def start(self) -> bool:
         """Initializes and opens the camera stream using DirectShow."""
         self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)

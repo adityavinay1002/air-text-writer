@@ -240,14 +240,19 @@ export default function App() {
 
   // REST Camera Controls
   const handleStartCamera = async () => {
-    console.log('[AirWrite] Start camera clicked');
+    console.log('[AirWrite] START CAMERA clicked');
     updateSession('cameraStatus', 'starting');
     try {
+      console.log(`[AirWrite] Sending POST request to ${API_ENDPOINTS.CAMERA_START}...`);
       const res = await fetch(API_ENDPOINTS.CAMERA_START, { method: 'POST' });
-      if (res.ok) {
-        console.log('[AirWrite] Backend camera started successfully');
+      const data = await res.json();
+      console.log('[AirWrite] Backend camera start response received:', data);
+      console.log('[AirWrite] camera_active value:', data.camera_active);
+      if (res.ok && (data.status === 'started' || data.status === 'already_running' || data.camera_active)) {
+        console.log(`[AirWrite] Stream URL loading: ${API_ENDPOINTS.CAMERA_STREAM}`);
         updateSession('cameraStatus', 'active');
       } else {
+        console.error('[AirWrite] Failed to start camera:', data.message || data.status);
         updateSession('cameraStatus', 'stopped');
       }
     } catch (e) {
@@ -257,12 +262,14 @@ export default function App() {
   };
 
   const handleStopCamera = async () => {
-    console.log('[AirWrite] Stop camera clicked');
+    console.log('[AirWrite] STOP CAMERA clicked');
     updateSession('cameraStatus', 'stopping');
     try {
+      console.log(`[AirWrite] Sending POST request to ${API_ENDPOINTS.CAMERA_STOP}...`);
       const res = await fetch(API_ENDPOINTS.CAMERA_STOP, { method: 'POST' });
+      const data = await res.json();
+      console.log('[AirWrite] Backend camera stop response received:', data);
       if (res.ok) {
-        console.log('[AirWrite] Backend camera stopped successfully');
         updateSession('cameraStatus', 'stopped');
       }
     } catch (e) {

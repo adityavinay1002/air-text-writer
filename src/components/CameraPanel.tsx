@@ -63,6 +63,8 @@ export function CameraPanel({
           <img
             src={API_ENDPOINTS.CAMERA_STREAM}
             alt="Live OpenCV CV Feed"
+            onLoad={() => console.log(`[AirWrite UI] Live Stream frame loaded: ${API_ENDPOINTS.CAMERA_STREAM}`)}
+            onError={(e) => console.error(`[AirWrite UI] Stream load error from ${API_ENDPOINTS.CAMERA_STREAM}:`, e)}
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: '10px' }}
           />
         ) : (
