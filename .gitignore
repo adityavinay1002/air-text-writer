@@ -100,8 +100,9 @@ lerna-debug.log*
 *.sw?
 
 # ==============================
-# TEMP FILES
+# TEMP & PRIVATE DOCS
 # ==============================
 
 *.tmp
 *.temp
+PROJECT_JOURNEY_AND_VIVA.txt
