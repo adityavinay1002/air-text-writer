@@ -143,7 +143,7 @@ def main():
                 last_rec_result = engine_res
                 logger.info(f"[TrOCR CONFIRMED RESULT] Text: '{engine_res['word']}' | Status: {engine_res['status']} | Conf: {engine_res['confidence']*100:.1f}% | Latency: {proc_latency_ms}ms")
 
-            # 7. Render Visual Handwriting Strokes on Preview Frame
+            # 7. Render Visual Hand-writing Strokes on Preview Frame
             if drawable_strokes:
                 frame = draw_strokes(frame, drawable_strokes)
 
